@@ -1,0 +1,7 @@
+[package]
+name = "rtorrent"
+version = "0.0.1"
+authors = ["Tim Bangma <git.bangma@pm.me>"]
+edition = "2018"
+
+[dependencies]
