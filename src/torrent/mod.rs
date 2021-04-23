@@ -21,7 +21,6 @@ pub struct TorrentFiles {
     pub path: Vec<String>,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
