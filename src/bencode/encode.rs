@@ -1,5 +1,5 @@
-use super::{Benc, BInt, BMap, BStr, BVec};
 use super::parse::ParseBenc;
+use super::{BInt, BMap, BStr, BVec, Benc};
 
 pub trait EncodeBencode<T: ParseBenc<T>> {
     fn as_bytes(&self) -> Vec<u8>;
@@ -29,7 +29,8 @@ impl EncodeBencode<BVec> for BVec {
     fn as_bytes(&self) -> Vec<u8> {
         let mut bytes: Vec<u8> = Vec::new();
         bytes.push('l' as u8);
-        self.into_iter().for_each(|e| bytes.append(&mut e.as_bytes()));
+        self.into_iter()
+            .for_each(|e| bytes.append(&mut e.as_bytes()));
         bytes.push('e' as u8);
         bytes
     }
@@ -51,8 +52,8 @@ impl EncodeBencode<BMap> for BMap {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::Benc;
+    use super::*;
 
     #[test]
     fn test_encode_bint() {
@@ -63,7 +64,10 @@ mod tests {
 
     #[test]
     fn test_encode_bstr() {
-        assert_eq!(vec![51, 58, 1, 2, 3], (vec![1 as u8, 2, 3] as BStr).as_bytes());
+        assert_eq!(
+            vec![51, 58, 1, 2, 3],
+            (vec![1 as u8, 2, 3] as BStr).as_bytes()
+        );
         assert_eq!(b"3:foo".to_vec(), (b"foo".to_vec() as BStr).as_bytes());
         assert_eq!(b"0:".to_vec(), (b"".to_vec() as BStr).as_bytes());
         assert_eq!(
@@ -78,16 +82,23 @@ mod tests {
         assert_eq!(
             b"li1ei2ei3ei4ei5ee".to_vec(),
             (vec![
-                Benc::Int(1), Benc::Int(2), Benc::Int(3),
-                Benc::Int(4), Benc::Int(5),
-            ] as BVec).as_bytes()
+                Benc::Int(1),
+                Benc::Int(2),
+                Benc::Int(3),
+                Benc::Int(4),
+                Benc::Int(5),
+            ] as BVec)
+                .as_bytes()
         );
         assert_eq!(
             b"li1e3:foo3:bari5ee".to_vec(),
             (vec![
-                Benc::Int(1), Benc::Str(b"foo".to_vec()),
-                Benc::Str(b"bar".to_vec()), Benc::Int(5),
-            ] as BVec).as_bytes()
+                Benc::Int(1),
+                Benc::Str(b"foo".to_vec()),
+                Benc::Str(b"bar".to_vec()),
+                Benc::Int(5),
+            ] as BVec)
+                .as_bytes()
         );
         assert_eq!(b"le".to_vec(), (vec!() as BVec).as_bytes());
     }

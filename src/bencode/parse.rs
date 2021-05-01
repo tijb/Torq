@@ -1,4 +1,4 @@
-use super::{Benc, BInt, BMap, BStr, BVec};
+use super::{BInt, BMap, BStr, BVec, Benc};
 
 /// Implements the parsing of byte arrays into a Bencode Type (BInt, BMap, BStr, BVec)
 pub trait ParseBenc<T> {
@@ -162,7 +162,10 @@ fn byte_index(seek: u8, bytes: &[u8]) -> Option<usize> {
 
 /// Parse a byte slice into a String.
 fn parse_string(bytes: &[u8]) -> ParseResult<String> {
-    wrap_err(String::from_utf8(bytes.to_vec()), ParseError::InvalidUtf8String)
+    wrap_err(
+        String::from_utf8(bytes.to_vec()),
+        ParseError::InvalidUtf8String,
+    )
 }
 
 /// Parse a byte slice into a usize. Assumes bytes are an ascii string of a valid usize value.
@@ -187,12 +190,14 @@ fn wrap_err<R, E, T>(res: Result<R, E>, err: T) -> Result<R, T> {
 /// Rewraps a ParseResult with a Bencode type into a result with a Benc instead so it can be
 /// collected more easily.
 #[macro_export]
-macro_rules! rewrap_res { ($value:expr, $variant:ident) => {
-    match $value {
-        Ok((a, b)) => Ok((Benc::$variant(a), b)),
-        Err(e) => Err(e),
-    }
-} }
+macro_rules! rewrap_res {
+    ($value:expr, $variant:ident) => {
+        match $value {
+            Ok((a, b)) => Ok((Benc::$variant(a), b)),
+            Err(e) => Err(e),
+        }
+    };
+}
 
 // Attempts to parse the given bytes as any of the Bencode types, based on the ascii value of the
 /// first byte.
@@ -208,24 +213,39 @@ pub fn parse_any(bytes: &[u8]) -> ParseResult<(Benc, usize)> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Benc;
+    use crate::bencode::Benc;
 
-    use super::{*, ParseError::*};
+    use super::{ParseError::*, *};
 
     #[test]
     fn bint_parse() {
         assert_eq!((10, 4), BInt::parse_with_offset(b"i10e").unwrap());
         assert_eq!((10, 6), BInt::parse_with_offset(b"i0010e").unwrap());
         assert_eq!((1234, 6), BInt::parse_with_offset(b"i1234e").unwrap());
-        assert_eq!(InvalidFirstByte, BInt::parse_with_offset(b"10e").unwrap_err());
-        assert_eq!(MissingTerminator, BInt::parse_with_offset(b"i10").unwrap_err());
+        assert_eq!(
+            InvalidFirstByte,
+            BInt::parse_with_offset(b"10e").unwrap_err()
+        );
+        assert_eq!(
+            MissingTerminator,
+            BInt::parse_with_offset(b"i10").unwrap_err()
+        );
     }
 
     #[test]
     fn bstr_parse() {
-        assert_eq!((b"foo".to_vec(), 5), BStr::parse_with_offset(b"3:foo").unwrap());
-        assert_eq!(ByteStringTooLong, BStr::parse_with_offset(b"4:foo").unwrap_err());
-        assert_eq!(InvalidFirstByte, BStr::parse_with_offset(b"abc:foo").unwrap_err());
+        assert_eq!(
+            (b"foo".to_vec(), 5),
+            BStr::parse_with_offset(b"3:foo").unwrap()
+        );
+        assert_eq!(
+            ByteStringTooLong,
+            BStr::parse_with_offset(b"4:foo").unwrap_err()
+        );
+        assert_eq!(
+            InvalidFirstByte,
+            BStr::parse_with_offset(b"abc:foo").unwrap_err()
+        );
     }
 
     #[test]
@@ -241,8 +261,14 @@ mod tests {
             Benc::Str(val) => assert_eq!(&b"foo".to_vec(), val),
             _ => panic!("Something went wrong."),
         }
-        assert_eq!(MissingTerminator, BVec::parse_with_offset(&b"li10e".to_vec()).unwrap_err());
-        assert_eq!((vec![], 2), BVec::parse_with_offset(&b"le".to_vec()).unwrap());
+        assert_eq!(
+            MissingTerminator,
+            BVec::parse_with_offset(&b"li10e".to_vec()).unwrap_err()
+        );
+        assert_eq!(
+            (vec![], 2),
+            BVec::parse_with_offset(&b"le".to_vec()).unwrap()
+        );
     }
 
     #[test]
@@ -258,7 +284,13 @@ mod tests {
         assert_eq!(2, offset);
         assert_eq!(0, bmap.len());
 
-        assert_eq!(MissingTerminator, BMap::parse(&b"d3:fooi4e".to_vec()).unwrap_err());
-        assert_eq!(InvalidFirstByte, BMap::parse(&b"di10ei10e".to_vec()).unwrap_err());
+        assert_eq!(
+            MissingTerminator,
+            BMap::parse(&b"d3:fooi4e".to_vec()).unwrap_err()
+        );
+        assert_eq!(
+            InvalidFirstByte,
+            BMap::parse(&b"di10ei10e".to_vec()).unwrap_err()
+        );
     }
 }

@@ -21,11 +21,47 @@ pub struct TorrentFiles {
     pub path: Vec<String>,
 }
 
+impl TorrentFiles {
+    fn from(bmap: BMap) -> Option<TorrentFiles> {
+        let file_map: BMap = match bmap.get("files") {
+            Some(f) => f.to_map(),
+            None => return None,
+        };
+
+        Some(TorrentFiles {
+            length: file_map
+                .get("length")
+                .expect("No length value found in files dict.")
+                .to_usize(),
+            path: file_map
+                .get("path")
+                .expect("No path found in files dict.")
+                .to_vec()
+                .iter()
+                .map(|b| b.to_string())
+                .collect::<Vec<String>>(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-//
+    #[test]
+    fn torrentfiles_parse() {
+        let benc: Benc =
+            Benc::parse(&b"d5:filesd6:lengthi10e4:pathl3:foo3:bareee".to_vec()).unwrap();
+        let bmap: BMap = benc.to_map();
+        println!("{:?}", bmap);
+        let tor_files: TorrentFiles = TorrentFiles::from(bmap).unwrap();
+
+        assert_eq!(10, tor_files.length);
+        assert_eq!("foo", tor_files.path.get(0).unwrap());
+        assert_eq!("bar", tor_files.path.get(1).unwrap());
+    }
+
+    //
     // #[test]
     // fn it_works() {
     //     let torrent_bytes =
